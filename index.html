@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager - Manage Orders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 130px);
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .btn {
+            padding: 10px 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        .btn.send {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn.delete {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn.resend {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn.clear {
+            background-color: #dc3545;
+            color: white;
+            margin-top: 20px;
+        }
+        .order-item {
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+        .order-status {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        .previous-orders {
+            margin-top: 20px;
+        }
+        .employee-performance {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+        }
+        .employee-performance h4 {
+            margin: 0;
+            color: #007bff;
+        }
+        .login-container {
+            text-align: center;
+        }
+        .login-container h3 {
+            margin-bottom: 20px;
+        }
+        .login-error {
+            color: red;
+            margin-top: 10px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 15px;
+            }
+            input[type="text"], input[type="password"] {
+                width: calc(100% - 110px);
+            }
+            .btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h3>Manager - Order Management</h3>
+    </div>
+    
+    <div id="loginContainer" class="login-container">
+        <h3>Please Enter Password</h3>
+        <input type="password" id="passwordInput" placeholder="Enter password" />
+        <button class="btn send" onclick="authenticate()">Login</button>
+        <p class="login-error" id="loginError" style="display:none;"></p>
+    </div>
+
+    <div id="orderManagement" style="display:none;">
+        <div>
+            <input type="text" id="orderInput" placeholder="Enter order details" />
+            <button class="btn send" onclick="sendOrder()">Send Order</button>
+        </div>
+        
+        <div class="previous-orders">
+            <h4>Current Orders</h4>
+            <div id="ordersContainer"></div>
+        </div>
+
+        <div class="previous-orders">
+            <h4>Previous Orders</h4>
+            <div id="previousOrdersContainer"></div>
+            <button class="btn clear" onclick="clearPreviousOrders()">Clear Previous Orders</button>
+        </div>
+
+        <div class="employee-performance">
+            <h4>Employee Performance</h4>
+            <div id="performanceContainer"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function authenticate() {
+        const passwordInput = document.getElementById('passwordInput');
+        const loginError = document.getElementById('loginError');
+        const orderManagement = document.getElementById('orderManagement');
+
+        // Check if the entered password is correct
+        if (passwordInput.value === "enwa10") {
+            loginError.style.display = 'none';
+            loginContainer.style.display = 'none';
+            orderManagement.style.display = 'block';
+            loadOrders(); // Load orders after successful login
+            displayEmployeePerformance(); // Load employee performance after successful login
+        } else {
+            loginError.style.display = 'block';
+            loginError.innerText = 'Incorrect password. Please try again.';
+        }
+    }
+
+    function sendOrder() {
+        const orderInput = document.getElementById('orderInput');
+        const orderDetails = orderInput.value.trim();
+
+        if (!orderDetails) {
+            alert("Please enter order details.");
+            return;
+        }
+
+        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+        
+        // Check for duplicate orders
+        if (orders.some(order => order.details === orderDetails)) {
+            alert("This order is a duplicate.");
+            return;
+        }
+
+        // Create a new order
+        const newOrder = {
+            details: orderDetails,
+            status: 'Pending',
+            actionDate: null,
+            employees: {
+                1: 'Pending',
+                2: 'Pending',
+                3: 'Pending'
+            }
+        };
+
+        // Push new order to orders array
+        orders.push(newOrder);
+        localStorage.setItem('orders', JSON.stringify(orders));
+
+        orderInput.value = '';
+        loadOrders();
+        displayEmployeePerformance(); // Update performance after adding a new order
+    }
+
+    function loadOrders() {
+        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+        const ordersContainer = document.getElementById('ordersContainer');
+        ordersContainer.innerHTML = '';
+
+        if (orders.length === 0) {
+            ordersContainer.innerHTML = '<p>No current orders available.</p>';
+            return;
+        }
+
+        orders.forEach((order, index) => {
+            let statusText = `Status: ${order.status}`;
+            let employeeStatus = `Employee Status: 1 - ${order.employees[1]}, 2 - ${order.employees[2]}, 3 - ${order.employees[3]}`;
+            
+            if (order.status === 'Accepted' || order.status === 'Cancelled') {
+                statusText += ` on ${order.actionDate}`;
+            }
+
+            ordersContainer.innerHTML += `
+                <div class="order-item">
+                    <p><strong>Order #${index + 1}:</strong> ${order.details}</p>
+                    <p class="order-status">${statusText}</p>
+                    <p>${employeeStatus}</p>
+                    <button class="btn delete" onclick="deleteOrder(${index})">Delete Order</button>
+                    <button class="btn resend" onclick="resendOrder(${index})">Resend Different Order</button>
+                </div>
+            `;
+        });
+        displayPreviousOrders();
+    }
+
+    function deleteOrder(index) {
+        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+        orders.splice(index, 1); // Remove the order from the array
+        localStorage.setItem('orders', JSON.stringify(orders));
+        loadOrders();
+        displayEmployeePerformance(); // Update performance after deleting an order
+    }
+
+    function resendOrder(index) {
+        deleteOrder(index); // Delete the current order
+        document.getElementById('orderInput').focus(); // Focus on the input field to resend a different order
+    }
+
+    function displayPreviousOrders() {
+        const orders = JSON.parse(localStorage.getItem('orders')) || [];
+        const previousOrdersContainer = document.getElementById('previousOrdersContainer');
+        previousOrdersContainer.innerHTML = '';
+
+        if (orders.length === 0) {
+            previousOrdersContainer.innerHTML = '<p>No previous orders available.</p>';
+        } else {
+            orders.forEach((order, index) => {
+                previousOrdersContainer.innerHTML += `
+                    <div class="order-item">
+                        <p><strong>Order #${index + 1}:</strong> ${order.details}</p>
+                        <p class="order-status">Status: ${order.status}</p>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    function clearPreviousOrders() {
+        if (confirm('Are you sure you want to clear all previous orders?')) {
+            localStorage.removeItem('orders');
+            loadOrders();
+            displayEmployeePerformance(); // Update performance after clearing orders
+        }
+    }
+
+    function displayEmployeePerformance() {
+        const orders = JSON.parse(localStorage.getItem('orders')) || [];
+        const employeeCounts = {
+            1: 0,
+            2: 0,
+            3: 0
+        };
+
+        orders.forEach(order => {
+            // Increment the count for the employees who accepted the order
+            Object.keys(order.employees).forEach(emp => {
+                if (order.employees[emp] === 'Accepted') {
+                    employeeCounts[emp]++;
+                }
+            });
+        });
+
+        const performanceContainer = document.getElementById('performanceContainer');
+        performanceContainer.innerHTML = '';
+
+        // Sort employees by number of completed orders
+        const sortedEmployees = Object.entries(employeeCounts).sort((a, b) => b[1] - a[1]);
+
+        sortedEmployees.forEach(([employeeId, count]) => {
+            performanceContainer.innerHTML += `<p>Employee ${employeeId}: ${count} orders completed</p>`;
+        });
+    }
+
+    window.onload = function() {
+        // No action needed here since the login is handled on button click
+    };
+</script>
+
+</body>
+</html>
+
